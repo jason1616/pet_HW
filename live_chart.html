@@ -1,0 +1,330 @@
+<!DOCTYPE html> 
+<html>
+    <head>
+        <title>Monitoring TesT</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+    </head>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script>
+	$(document).ready(function () {
+    var data_T=[],data_H =[],data_T1=[],data_H1=[];
+    var water_past = 1;
+    var str="str="+"select time,temp,humid,water from rev_sensor order by time DESC limit 1;";
+    var str1="str="+"select time,temp,humid,water from rev_sensor order by time DESC limit 10;";
+    var str2="str="+"select time,temp,humid,water from rev_sensor where time > date_sub(now(),interval 1 hour) group by floor(minute(time)/10) order by time DESC limit 10";
+    //( function (){getData(data_T,data_H,str1)})()
+    getData(data_T,data_H,str1);
+    getData(data_T1,data_H1,str2);         
+    Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });
+    Highcharts.chart('livechart', {
+        chart: {
+            type: 'spline',
+            animation: Highcharts.svg, // don't animate in old IE
+           // marginRight: 10,
+            events: {
+                load: function () {
+                    // set up the updating of the chart each second
+                    var series = this.series[0];
+                    var series1 = this.series[1];
+                    setInterval(function () {
+			 $.ajax({
+		                url: 't.php',
+        		        type: 'POST',
+                        data: str,
+        		        dataType: 'json',
+              			success: function(data){
+                            var x = Number(data[0].date)-1800000,
+                                y = Number(data[0].temperature),
+                            	y1 = Number(data[0].humidity);
+                            var water =(data[0].water);
+                            document.getElementById("circle").style.visibility= "visible";
+                            if(water != water_past){
+                                if(water == 0){
+                                    circle.style.backgroundColor = "#ff0000";
+                                }
+                                else{
+                                     circle.style.backgroundColor = "#04ef18";
+                                }
+                                water_past = water;
+                            }
+                            // $('body').append(water+"<br>");
+                               // alert(water);
+                            // document.write(water);
+                            series1.addPoint([x, y], false, true);
+                        	series.addPoint([x,y1],true,true);
+                            $("#tem").text(y+"°C");
+                            $("#hum").text(y1+"%");
+                		},
+                		error: function (request, status, error) 
+{
+                            		alert("error1");
+                		}
+           		})
+                    }, 2000);
+                }
+            }
+        },
+        title: {
+            text: 'Live temperature & humidity monitoring',
+                      style:{
+                        fontSize: '35px'
+                      }
+        },
+        credits: {
+              enabled: false
+         },
+    //	legend: {
+        //	layout: 'vertical',
+        //	align: 'right',
+        //	verticalAlign: 'bottom',
+        // floating: true,
+           // x: -20,
+           // y: -180
+    //	},
+        xAxis: {
+            type: 'datetime',
+            //crosshair: true
+        },
+        yAxis: [
+	 { //alignTics : false,
+            tickInterval: 0.3,
+            labels: {
+            format: '{value}°C',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+        title: {
+            text: 'Temperature (°C)',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        }
+     },{
+        tickInterval: 0.3,
+        labels: {
+            format: '{value} %',
+            style: {
+                color: Highcharts.getOptions().colors[0]
+            }
+        },
+        title: {
+            text: 'Humidity (%)',
+            style: {
+                color: Highcharts.getOptions().colors[0]
+            }
+        },
+        opposite: true
+        }],
+        tooltip: {
+            //formatter: function () {
+            // return '<b>' + this.series.name + '</b><br/>' +
+            // Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+            // Highcharts.numberFormat(this.y, 2);
+            //},
+            shared: true
+        },
+       // legend: {
+       // enabled: false
+       // },
+        exporting: {
+            enabled: false
+        },
+        series: [
+		 {
+            name: 'humidity',
+            data: data_H,
+            tooltip: {
+                valueSuffix: '%'
+            },
+            yAxis: 1
+        },
+	    {
+            name: 'Temperature',
+            data: data_T,
+            tooltip: {
+                valueSuffix : '°C'
+            },
+    }]
+    
+    });
+
+
+
+	Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });
+    Highcharts.chart('recentchart', {
+        chart: {
+            type: 'spline',
+            animation: Highcharts.svg, // don't animate in old IE
+           // marginRight: 10,
+        },
+        title: {
+            text: 'Recently temperature & humidity monitoring',
+                      style:{
+                        fontSize: '35px'
+                      }
+        },
+        credits: {
+              enabled: false
+         },
+    //  legend: {
+        //      layout: 'vertical',
+        //      align: 'right',
+        //      verticalAlign: 'bottom',
+        // floating: true,
+           // x: -20,
+           // y: -180
+    //  },
+        xAxis: {
+            type: 'datetime',
+            //crosshair: true
+        },
+        yAxis: [
+         { //alignTics : false,
+            tickInterval: 0.3,
+            labels: {
+            format: '{value}°C',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        },
+        title: {
+            text: 'Temperature (°C)',
+            style: {
+                color: Highcharts.getOptions().colors[1]
+            }
+        }
+     },{
+        tickInterval: 0.3,
+        labels: {
+            format: '{value} %',
+            style: {
+                color: Highcharts.getOptions().colors[0]
+            }
+        },
+        title: {
+            text: 'Humidity (%)',
+            style: {
+                color: Highcharts.getOptions().colors[0]
+            }
+        },
+        opposite: true
+        }],
+        tooltip: {
+            //formatter: function () {
+            // return '<b>' + this.series.name + '</b><br/>' +
+            // Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '<br/>' +
+            // Highcharts.numberFormat(this.y, 2);
+            //},
+            shared: true
+        },
+       // legend: {
+       // enabled: false
+       // },
+        exporting: {
+            enabled: false
+        },
+        series: [
+                 {
+            name: 'humidity',
+            data: data_H1,
+            tooltip: {
+                valueSuffix: '%'
+            },
+            yAxis: 1
+        },
+            {
+            name: 'Temperature',
+            data: data_T1,
+            tooltip: {
+                valueSuffix : '°C'
+            },
+    }]
+
+    });
+
+    function getData(data_T,data_H,str1){
+	 $.ajax({
+                url: 't.php',
+                async: false,
+                type: 'POST',
+                data: str1,
+                dataType: 'json',
+                success: function(data){
+               // alert(Number(data[0].date));
+               // alert(Number(data[1].date));
+                var i;
+                for(i=4;i>=0;i--){
+                    data_T.push({
+                        x: Number(data[i].date)-1800000,
+                        y: Number(data[i].temperature)
+                        });
+                    data_H.push({
+                        x: Number(data[i].date)-1800000,
+                        y: Number(data[i].humidity)
+                    });
+                    }
+                
+                    },
+                
+                error: function (request, status, error) {
+                            alert("error1");
+                }
+           });
+    }
+});
+    </script>
+    <style>
+    .circle{
+        background-color:#04ef18;
+        width:20px;
+        height:20px;
+        -webkit-border-radius:50%;
+        -moz-border-radius:50%;
+        -o-border-radius:50%;
+        border-radius:50%;
+        float: left;
+        visibility:hidden;
+    }
+    table{
+    text-align:center;
+    margin: 0 auto;
+    }
+    </style>
+    <body>
+        <div id="livechart" style="max-width:800px; height: 400px; margin: 0 auto"></div>
+      <table >
+      <thead>
+      <tr>
+      <td>Temperature :</td>
+      <td id="tem"><td>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>Humidity :</td>
+      <td id="hum"></td>
+      </tr>
+      </tbody>
+      <tfoot>
+      <tr>
+      <td>Water :</td>
+      <td class="circle" id="circle" ></td>
+      <td id="water">
+      </tr>
+      </tfoot>
+      </table>
+     <div id="recentchart" style="max-width:800px; height: 400px; margin: 0 auto"></div> 
+        </body> 
+</html>

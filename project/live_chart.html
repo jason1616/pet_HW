@@ -11,13 +11,15 @@
     <script>
 	$(document).ready(function () {
     var data_T=[],data_H =[],data_T1=[],data_H1=[];
+    var phpname1 = "live_base.php";
+    var phpname2 = "recent.php";
     var water_past = 1;
     var str="str="+"select time,temp,humid,water from rev_sensor order by time DESC limit 1;";
     var str1="str="+"select time,temp,humid,water from rev_sensor order by time DESC limit 10;";
-    var str2="str="+"select time,temp,humid,water from rev_sensor where time > date_sub(now(),interval 1 hour) group by floor(minute(time)/10) order by time DESC limit 10";
+    var str2="str="+"select time,temp,humid,water from rev_sensor where time > date_sub(now(),interval 10 minute) group by floor(minute(time)/1) order by time DESC limit 10";
     //( function (){getData(data_T,data_H,str1)})()
-    getData(data_T,data_H,str1);
-    getData(data_T1,data_H1,str2);         
+    getData(data_T,data_H,str1,phpname1);
+    getData(data_T1,data_H1,str2,phpname2);         
     Highcharts.setOptions({
         global: {
             useUTC: false
@@ -35,22 +37,22 @@
                     var series1 = this.series[1];
                     setInterval(function () {
 			 $.ajax({
-		                url: 't.php',
+		                url: 'live.php',
         		        type: 'POST',
                         data: str,
         		        dataType: 'json',
               			success: function(data){
-                            var x = Number(data[0].date)-1800000,
+                            var x = data[0].date,
                                 y = Number(data[0].temperature),
                             	y1 = Number(data[0].humidity);
-                            var water =(data[0].water);
+                            var water =data[0].water;
                             document.getElementById("circle").style.visibility= "visible";
                             if(water != water_past){
                                 if(water == 0){
                                     circle.style.backgroundColor = "#ff0000";
                                 }
                                 else{
-                                     circle.style.backgroundColor = "#04ef18";
+                                     circle.style.backgroundColor = "#04ef18";//04ef18
                                 }
                                 water_past = water;
                             }
@@ -64,7 +66,8 @@
                 		},
                 		error: function (request, status, error) 
 {
-                            		alert("error1");
+    alert("LIVE ERROR : "+"code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+    //alert("error1");
                 		}
            		})
                     }, 2000);
@@ -254,9 +257,9 @@
 
     });
 
-    function getData(data_T,data_H,str1){
+    function getData(data_T,data_H,str1,url){
 	 $.ajax({
-                url: 't.php',
+                url: url,
                 async: false,
                 type: 'POST',
                 data: str1,
@@ -265,13 +268,13 @@
                // alert(Number(data[0].date));
                // alert(Number(data[1].date));
                 var i;
-                for(i=4;i>=0;i--){
+                for(i=9;i>=0;i--){
                     data_T.push({
-                        x: Number(data[i].date)-1800000,
+                        x: data[i].date,
                         y: Number(data[i].temperature)
                         });
                     data_H.push({
-                        x: Number(data[i].date)-1800000,
+                        x: data[i].date,
                         y: Number(data[i].humidity)
                     });
                     }
@@ -279,7 +282,8 @@
                     },
                 
                 error: function (request, status, error) {
-                            alert("error1");
+               alert("RECENT ERROR : "+"code:"+request.status+"\n"+"message:"+request.responseText+"\n"+"error:"+error);
+
                 }
            });
     }
